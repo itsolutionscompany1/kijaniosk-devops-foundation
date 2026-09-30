@@ -1,0 +1,135 @@
+===================================================================
+KijaniKiosk Pre-Provisioning Audit (Dirty State)
+Date: 2026-09-30T17:59:45+00:00
+Host: kijanikiosk-vm
+User: vagrant
+===================================================================
+
+=== Service accounts ===
+$ getent passwd kk-api kk-payments kk-logs
+kk-api:x:1501:1500:KijaniKiosk API service:/home/kk-api:/usr/sbin/nologin
+kk-payments:x:1502:1500:KijaniKiosk payments service:/home/kk-payments:/usr/sbin/nologin
+kk-logs:x:1503:1500:KijaniKiosk logs service:/home/kk-logs:/usr/sbin/nologin
+
+=== kijanikiosk group ===
+$ getent group kijanikiosk
+kijanikiosk:x:1500:
+
+=== /opt/kijanikiosk directory ===
+$ ls -la /opt/kijanikiosk/
+total 20
+drwxr-xr-x 5 root root 4096 Sep 30 17:56 .
+drwxr-xr-x 3 root root 4096 Sep 30 17:56 ..
+drwxrwxrwx 2 root root 4096 Sep 30 17:56 config
+drwxr-xr-x 2 root root 4096 Sep 30 17:56 health
+drwxr-xr-x 3 root root 4096 Sep 30 17:56 shared
+
+=== ACLs on shared/logs ===
+$ getfacl /opt/kijanikiosk/shared/logs/
+getfacl: Removing leading '/' from absolute path names
+# file: opt/kijanikiosk/shared/logs/
+# owner: root
+# group: root
+user::rwx
+group::r-x
+other::r-x
+
+
+=== ACLs on config ===
+$ getfacl /opt/kijanikiosk/config/
+getfacl: Removing leading '/' from absolute path names
+# file: opt/kijanikiosk/config/
+# owner: root
+# group: root
+user::rwx
+group::rwx
+other::rwx
+
+
+=== UFW status ===
+$ sudo ufw status numbered
+Status: active
+
+     To                         Action      From
+     --                         ------      ----
+[ 1] 3001                       DENY IN     Anywhere                  
+[ 2] 3001 (v6)                  DENY IN     Anywhere (v6)             
+
+
+=== Package holds ===
+$ apt-mark showhold
+curl
+
+=== KijaniKiosk systemd units ===
+$ systemctl list-unit-files | grep kk-
+(no output above means no kk- units exist)
+
+=== kk-api hardening score ===
+$ sudo systemd-analyze security kk-api.service
+Unit kk-api.service not found, cannot analyze.
+
+=== Logs directory size ===
+$ du -sh /opt/kijanikiosk/shared/logs/
+4.0K	/opt/kijanikiosk/shared/logs/
+
+=== Journal disk usage ===
+$ journalctl --disk-usage
+Hint: You are currently not seeing messages from other users and the system.
+      Users in groups 'adm', 'systemd-journal' can see all messages.
+      Pass -q to turn off this notice.
+Archived and active journals take up 8.0M in the file system.
+
+===================================================================
+END OF AUDIT
+===================================================================
+===================================================================
+INTERPRETATION
+===================================================================
+
+This VM is in a DIRTY state. All six conditions listed in the Week 3
+brief are present, matching a server that has accumulated state
+across four days of labs. The provisioning script must detect and
+converge each of these:
+
+  1. Service accounts exist with non-canonical UIDs:
+     - kk-api UID 1501 (expected canonical: 2001)
+     - kk-payments UID 1502 (expected canonical: 2002)
+     - kk-logs UID 1503 (expected canonical: 2003)
+     - kijanikiosk group GID 1500 (expected canonical: 2000)
+     Script handling: detect existing UIDs and correct them to the
+     canonical values defined in the provisioning script. See
+     integration-notes.md for the decision.
+
+  2. /opt/kijanikiosk/ exists with wrong ownership and permissions:
+     - Owned by root:root instead of group kijanikiosk
+     - /opt/kijanikiosk/config/ is mode 0777 (world-writable)
+     - No default ACLs on shared/logs/
+     Script handling: reset ownership, fix config to 0750, apply
+     default ACLs on shared/logs/.
+
+  3. logrotate config absent:
+     - /etc/logrotate.d/kijanikiosk does not exist
+     Script handling: Phase 7 creates it from scratch.
+
+  4. UFW has a stray rule with no comment:
+     - Rule [1]/[2]: deny 3001 from Anywhere (no comment)
+     - Reflects Thursday's incident remediation, never cleaned up
+     Script handling: Phase 5 resets ufw to baseline, then adds
+     intended rules with comments.
+
+  5. Package hold on curl:
+     - curl 7.81.0-1ubuntu1.29 is held via apt-mark
+     Script handling: detect hold, remove it, then re-pin to the
+     version the script manages.
+
+  6. systemd units absent:
+     - No kk-*.service files exist
+     Script handling: Phase 6 writes all three units inline.
+
+The provisioning script must converge this state. The FIRST run
+(provision-run-dirty.log) demonstrates convergence of dirty state.
+The SECOND run (provision-run-clean.log) demonstrates idempotency.
+
+===================================================================
+END OF INTERPRETATION
+===================================================================
