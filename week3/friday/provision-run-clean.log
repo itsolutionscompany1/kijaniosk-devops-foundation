@@ -1,0 +1,105 @@
+[INFO]  kijanikiosk-provision.sh starting at 2026-09-30T19:56:02+00:00
+[INFO]  Host: kijanikiosk-vm
+[INFO]  Phase 1: users and groups
+[INFO]  Already correct: kijanikiosk GID 2000
+[INFO]  Already correct: kk-api UID 2001
+[INFO]  Already correct: kk-payments UID 2002
+[INFO]  Already correct: kk-logs UID 2003
+[INFO]  Phase 1 verification:
+[ OK ]  PASS: group kijanikiosk GID is 2000
+[ OK ]  PASS: user kk-api UID is 2001
+[ OK ]  PASS: user kk-payments UID is 2002
+[ OK ]  PASS: user kk-logs UID is 2003
+[INFO]  Phase 2: directories, ownership, ACLs
+[INFO]  Already exists: /opt/kijanikiosk
+[INFO]  Already exists: /opt/kijanikiosk/config
+[INFO]  Already exists: /opt/kijanikiosk/shared
+[INFO]  Already exists: /opt/kijanikiosk/shared/logs
+[INFO]  Already exists: /opt/kijanikiosk/health
+[INFO]  Setting ownership root:kijanikiosk on /opt/kijanikiosk
+[INFO]  Already correct: /opt/kijanikiosk/config mode 0750
+[ OK ]  Applied canonical permissions (base 2750, config 0750, logs 2770, health 2750)
+[INFO]  Applying default ACLs to /opt/kijanikiosk/shared/logs
+[ OK ]  Default ACLs applied to /opt/kijanikiosk/shared/logs
+[INFO]  Phase 2 verification:
+[ OK ]  PASS: /opt/kijanikiosk/config mode is 750
+[ OK ]  PASS: /opt/kijanikiosk/health mode is 2750
+[ OK ]  PASS: /opt/kijanikiosk/shared/logs mode is 2770
+[ OK ]  PASS: /opt/kijanikiosk mode is 2750
+[ OK ]  PASS: default ACL present on /opt/kijanikiosk/shared/logs
+[INFO]  Phase 3: package management
+[INFO]  Already correct: curl is not held
+[INFO]  Already installed: curl
+[INFO]  Already correct: curl 7.81.0-1ubuntu1.29 matches pin
+[INFO]  Phase 3 verification:
+[ OK ]  PASS: curl is not held
+[ OK ]  PASS: curl version is 7.81.0-1ubuntu1.29
+[INFO]  Phase 4: firewall
+[INFO]  Resetting ufw to a clean baseline (discarding history)
+[ OK ]  Firewall configured and enabled
+[INFO]  Phase 4 verification:
+[ OK ]  PASS: SSH (22) allowed with comment
+[ OK ]  PASS: HTTP (80) allowed with comment
+[ OK ]  PASS: Payments loopback allow present
+[ OK ]  PASS: Payments monitoring subnet allow present
+[ OK ]  PASS: Payments external deny present with comment
+[ OK ]  PASS: no stray un-commented deny 3001 rule
+[INFO]  Phase 5: systemd units
+[INFO]  Writing /etc/systemd/system/kk-payments.service
+[INFO]  Writing /etc/systemd/system/kk-api.service
+[INFO]  Writing /etc/systemd/system/kk-logs.service
+[INFO]  Reloading systemd and (re)starting units
+[ OK ]  systemd units written and started
+[INFO]  Phase 5 verification:
+[ OK ]  PASS: kk-api.service is active
+[ OK ]  PASS: kk-payments.service is active
+[ OK ]  PASS: kk-logs.service is active
+[ OK ]  PASS: kk-payments hardening score 0.2 < 2.5
+[ OK ]  PASS: kk-api hardening score 1.3 < 3.5
+[ OK ]  PASS: kk-logs hardening score 1.0 < 3.5
+[INFO]  Phase 6: journal persistence and logrotate
+[INFO]  Configuring persistent journald storage
+[ OK ]  Journal persistence configured (Storage=persistent, SystemMaxUse=500M)
+[INFO]  Writing /etc/logrotate.d/kijanikiosk
+[ OK ]  logrotate config written for kijanikiosk logs
+[INFO]  Phase 6 verification:
+[ OK ]  PASS: persistent journal directory exists
+[ OK ]  PASS: journal SystemMaxUse=500M configured
+[ OK ]  PASS: logrotate config exists
+[ OK ]  PASS: logrotate su directive present (group-writable dir accepted)
+[ OK ]  PASS: logrotate --debug passes
+[INFO]  Phase 7: health checks
+[INFO]  Probing service ports (3000, 3001, 3002)
+[INFO]  Port 3000 (kk-api):      "down"
+[INFO]  Port 3001 (kk-payments): "down"
+[INFO]  Port 3002 (kk-logs):     "down"
+[ OK ]  Health check JSON written to /opt/kijanikiosk/health/last-provision.json
+[INFO]  Phase 7 verification:
+[ OK ]  PASS: health JSON file exists
+[ OK ]  PASS: health JSON readable by kk-logs
+[ OK ]  PASS: health JSON contains timestamp
+[ OK ]  PASS: health JSON reports kk-api status
+[INFO]  Phase 8: final verification (checking all phases)
+[ OK ]  PASS: final: group kijanikiosk exists
+[ OK ]  PASS: final: user kk-api exists
+[ OK ]  PASS: final: user kk-payments exists
+[ OK ]  PASS: final: user kk-logs exists
+[ OK ]  PASS: final: base directory exists
+[ OK ]  PASS: final: config mode 0750
+[ OK ]  PASS: final: default ACL on logs dir
+[ OK ]  PASS: final: curl not held
+[ OK ]  PASS: final: SSH allowed
+[ OK ]  PASS: final: payments port denied externally
+[ OK ]  PASS: final: kk-api.service active
+[ OK ]  PASS: final: kk-payments.service active
+[ OK ]  PASS: final: kk-logs.service active
+[ OK ]  PASS: final: kk-payments score 0.2 < 2.5
+[ OK ]  PASS: final: kk-api score 1.3 < 3.5
+[ OK ]  PASS: final: kk-logs score 1.0 < 3.5
+[ OK ]  PASS: final: logrotate config present
+[ OK ]  PASS: final: logrotate --debug passes
+[ OK ]  PASS: final: health JSON exists
+
+[ OK ]  ===========================================================
+[ OK ]  ALL CHECKS PASSED — provisioning complete
+[ OK ]  ===========================================================
