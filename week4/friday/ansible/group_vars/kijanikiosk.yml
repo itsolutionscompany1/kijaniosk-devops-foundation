@@ -1,0 +1,34 @@
+---
+# Shared variables for all KijaniKiosk servers
+
+# Service accounts
+kk_group: kijanikiosk
+kk_group_gid: 2000
+kk_api_user: kk-api
+kk_api_uid: 2001
+kk_payments_user: kk-payments
+kk_payments_uid: 2002
+kk_logs_user: kk-logs
+kk_logs_uid: 2003
+
+# Directory structure
+kk_base: /opt/kijanikiosk
+kk_config_dir: "{{ kk_base }}/config"
+kk_logs_dir: "{{ kk_base }}/shared/logs"
+kk_health_dir: "{{ kk_base }}/health"
+
+# Pinned package version (from Week 3 pre-provisioning audit)
+curl_pin: "7.81.0-1ubuntu1.29"
+
+# Packages to install on every server
+common_packages:
+  - nginx
+  - curl
+  - ufw
+  - acl
+  - logrotate
+  - python3
+  - jq
+
+# Monitoring subnet for ufw
+monitoring_cidr: "10.0.1.0/24"

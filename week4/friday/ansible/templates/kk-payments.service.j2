@@ -1,0 +1,64 @@
+[Unit]
+Description=KijaniKiosk Payments Service ({{ kk_service_name }})
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ kk_service_user }}
+Group={{ kk_group }}
+EnvironmentFile={{ kk_config_dir }}/{{ kk_service_name }}.env
+ExecStart=/usr/bin/sleep infinity
+Restart=on-failure
+
+# Filesystem isolation
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ kk_logs_dir }}
+PrivateTmp=true
+PrivateDevices=true
+PrivateMounts=true
+
+# Kernel protection
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectProc=invisible
+ProcSubset=pid
+
+# Privilege restrictions
+NoNewPrivileges=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RemoveIPC=true
+UMask=0027
+
+# Capability restrictions
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+# Network isolation
+PrivateNetwork=true
+RestrictAddressFamilies=AF_UNIX
+IPAddressDeny=any
+
+# Namespace restrictions
+RestrictNamespaces=true
+PrivateUsers=true
+
+# System call filtering
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged @resources @obsolete @debug @mount @cpu-emulation @swap @module @raw-io @reboot @clock
+SystemCallErrorNumber=EPERM
+
+# Additional
+MemoryDenyWriteExecute=true
+DeviceAllow=/dev/null rw
+DeviceAllow=/dev/urandom r
+
+[Install]
+WantedBy=multi-user.target
