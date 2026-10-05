@@ -1,0 +1,99 @@
+[0m[1mmodule.app_servers["payments"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["api"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["logs"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["api"].data.external.vm_info: Read complete after 2s [id=-][0m
+[0m[1mmodule.app_servers["payments"].data.external.vm_info: Read complete after 2s [id=-][0m
+[0m[1mmodule.app_servers["logs"].data.external.vm_info: Read complete after 2s [id=-][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # module.app_servers["api"].null_resource.this[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "this" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "environment" = "staging"
+          [32m+[0m[0m "vm_ip"       = "10.32.18.62"
+          [32m+[0m[0m "vm_name"     = "kijanikiosk-api"
+        }
+    }
+
+[1m  # module.app_servers["logs"].null_resource.this[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "this" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "environment" = "staging"
+          [32m+[0m[0m "vm_ip"       = "10.32.18.61"
+          [32m+[0m[0m "vm_name"     = "kijanikiosk-logs"
+        }
+    }
+
+[1m  # module.app_servers["payments"].null_resource.this[0m will be created
+[0m  [32m+[0m[0m resource "null_resource" "this" {
+      [32m+[0m[0m id       = (known after apply)
+      [32m+[0m[0m triggers = {
+          [32m+[0m[0m "environment" = "staging"
+          [32m+[0m[0m "vm_ip"       = "10.32.18.198"
+          [32m+[0m[0m "vm_name"     = "kijanikiosk-payments"
+        }
+    }
+
+[1mPlan:[0m [0m3 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  [32m+[0m[0m all_server_ips     = {
+      [32m+[0m[0m api      = "10.32.18.62"
+      [32m+[0m[0m logs     = "10.32.18.61"
+      [32m+[0m[0m payments = "10.32.18.198"
+    }
+  [32m+[0m[0m api_server_ip      = "10.32.18.62"
+  [32m+[0m[0m environment        = "staging"
+  [32m+[0m[0m logs_server_ip     = "10.32.18.61"
+  [32m+[0m[0m payments_server_ip = "10.32.18.198"
+  [32m+[0m[0m ssh_commands       = {
+      [32m+[0m[0m api      = "ssh -i ~/.ssh/id_rsa ubuntu@10.32.18.62"
+      [32m+[0m[0m logs     = "ssh -i ~/.ssh/id_rsa ubuntu@10.32.18.61"
+      [32m+[0m[0m payments = "ssh -i ~/.ssh/id_rsa ubuntu@10.32.18.198"
+    }
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Saved the plan to: phase3-plan.tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "phase3-plan.tfplan"
+[0m[1mmodule.app_servers["payments"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["api"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["logs"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["api"].data.external.vm_info: Read complete after 1s [id=-][0m
+[0m[1mmodule.app_servers["logs"].data.external.vm_info: Read complete after 1s [id=-][0m
+[0m[1mmodule.app_servers["payments"].data.external.vm_info: Read complete after 1s [id=-][0m
+[0m[1mmodule.app_servers["payments"].null_resource.this: Refreshing state... [id=2211437849134869826][0m
+[0m[1mmodule.app_servers["logs"].null_resource.this: Refreshing state... [id=4687474680034084214][0m
+[0m[1mmodule.app_servers["api"].null_resource.this: Refreshing state... [id=7301039190475966483][0m
+
+[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m
+
+[0mTerraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
+
+# =====================================================================
+# Remote Backend Migration Confirmation
+# =====================================================================
+# After migrating state to MinIO (S3-compatible backend at http://localhost:9000),
+# running `terraform plan` returned:
+#
+#   No changes. Your infrastructure matches the configuration.
+#
+# This confirms:
+#   1. State was successfully migrated from local to remote backend
+#   2. Terraform can read/write state from MinIO
+#   3. The configuration is idempotent: three servers, zero drift
+#
+# This is Phase 3 evidence: the state mv step from the lab was not required
+# (Tuesday's destroy cleared state), but the remote backend migration was
+# completed successfully. The three null_resources are tracked remotely.
+# =====================================================================

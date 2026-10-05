@@ -1,0 +1,260 @@
+---
+# KijaniKiosk Ansible playbook
+# Configures all three servers (api, payments, logs) to the state
+# the Week 3 bash provisioning script produced.
+#
+# Seven phases:
+#   1. Packages
+#   2. Service accounts and group
+#   3. Directory structure and ACLs
+#   4. systemd unit files
+#   5. Firewall rules
+#   6. Journal persistence
+#   7. Logrotate configuration
+#
+# Idempotent: second run reports changed=0 on all hosts.
+
+- name: Configure KijaniKiosk servers
+  hosts: kijanikiosk
+  become: true
+  become_method: sudo
+
+  tasks:
+    # ============================================================
+    # Phase 1: Packages
+    # ============================================================
+    - name: Phase 1 — Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Phase 1 — Install common packages
+      ansible.builtin.apt:
+        name: "{{ common_packages }}"
+        state: present
+
+    # ============================================================
+    # Phase 2: Service accounts and group
+    # ============================================================
+    - name: Phase 2 — Ensure kijanikiosk group exists
+      ansible.builtin.group:
+        name: "{{ kk_group }}"
+        gid: "{{ kk_group_gid }}"
+        state: present
+
+    - name: Phase 2 — Ensure service accounts exist
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        uid: "{{ item.uid }}"
+        group: "{{ kk_group }}"
+        shell: /usr/sbin/nologin
+        create_home: false
+        system: false
+        state: present
+      loop:
+        - { name: "{{ kk_api_user }}",      uid: "{{ kk_api_uid }}" }
+        - { name: "{{ kk_payments_user }}", uid: "{{ kk_payments_uid }}" }
+        - { name: "{{ kk_logs_user }}",     uid: "{{ kk_logs_uid }}" }
+
+    # ============================================================
+    # Phase 3: Directory structure and ACLs
+    # ============================================================
+    - name: Phase 3 — Ensure base directory exists
+      ansible.builtin.file:
+        path: "{{ kk_base }}"
+        state: directory
+        owner: root
+        group: "{{ kk_group }}"
+        mode: '2750'
+
+    - name: Phase 3 — Ensure config directory exists
+      ansible.builtin.file:
+        path: "{{ kk_config_dir }}"
+        state: directory
+        owner: root
+        group: "{{ kk_group }}"
+        mode: '0750'
+
+    - name: Phase 3 — Ensure shared directory exists
+      ansible.builtin.file:
+        path: "{{ kk_base }}/shared"
+        state: directory
+        owner: root
+        group: "{{ kk_group }}"
+        mode: '0755'
+
+    - name: Phase 3 — Ensure logs directory exists
+      ansible.builtin.file:
+        path: "{{ kk_logs_dir }}"
+        state: directory
+        owner: root
+        group: "{{ kk_group }}"
+        mode: '2770'
+
+    - name: Phase 3 — Ensure health directory exists
+      ansible.builtin.file:
+        path: "{{ kk_health_dir }}"
+        state: directory
+        owner: root
+        group: "{{ kk_group }}"
+        mode: '2750'
+
+    - name: Phase 3 — Apply default ACLs to logs directory
+      ansible.posix.acl:
+        path: "{{ kk_logs_dir }}"
+        default: true
+        entity: "{{ item.entity }}"
+        etype: "{{ item.etype }}"
+        permissions: "{{ item.perms }}"
+        state: present
+      when: not ansible_check_mode
+      loop:
+        - { entity: "",       etype: user,  perms: rwx }
+        - { entity: "",       etype: group, perms: rwx }
+        - { entity: "",       etype: other, perms: "---" }
+
+    # ============================================================
+    # Phase 4: systemd unit files
+    # ============================================================
+    - name: Phase 4 — Ensure service environment file is present
+      ansible.builtin.template:
+        src: service.env.j2
+        dest: "{{ kk_config_dir }}/{{ kk_service_name }}.env"
+        owner: root
+        group: "{{ kk_group }}"
+        mode: '0640'
+      notify: Restart kk service
+
+    - name: Phase 4 — Ensure systemd unit file is present
+      ansible.builtin.template:
+        src: "{{ kk_service_name }}.service.j2"
+        dest: "/etc/systemd/system/{{ kk_service_name }}.service"
+        owner: root
+        group: root
+        mode: '0644'
+      notify:
+        - Reload systemd
+        - Restart kk service
+
+    - name: Phase 4 — Ensure service is enabled and running
+      ansible.builtin.systemd:
+        name: "{{ kk_service_name }}.service"
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    # ============================================================
+    # Phase 5: Firewall rules
+    # ============================================================
+    - name: Phase 5 — Set ufw default deny incoming
+      community.general.ufw:
+        default: deny
+        direction: incoming
+
+    - name: Phase 5 — Set ufw default allow outgoing
+      community.general.ufw:
+        default: allow
+        direction: outgoing
+
+    - name: Phase 5 — Allow SSH
+      community.general.ufw:
+        rule: allow
+        port: '22'
+        proto: tcp
+        comment: 'SSH management'
+
+    - name: Phase 5 — Allow HTTP
+      community.general.ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+        comment: 'HTTP via nginx'
+
+    - name: Phase 5 — Allow payments port from loopback
+      community.general.ufw:
+        rule: allow
+        port: '3001'
+        proto: tcp
+        from_ip: '127.0.0.1'
+        comment: 'Payments health check via loopback'
+      when: kk_service_name == 'kk-payments'
+
+    - name: Phase 5 — Allow payments port from monitoring subnet
+      community.general.ufw:
+        rule: allow
+        port: '3001'
+        proto: tcp
+        from_ip: "{{ monitoring_cidr }}"
+        comment: 'Payments health check from monitoring'
+      when: kk_service_name == 'kk-payments'
+
+    - name: Phase 5 — Enable ufw
+      community.general.ufw:
+        state: enabled
+
+    # ============================================================
+    # Phase 6: Journal persistence
+    # ============================================================
+    - name: Phase 6 — Ensure journald config directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/journald.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Phase 6 — Configure persistent journal
+      ansible.builtin.copy:
+        dest: /etc/systemd/journald.conf.d/99-kijanikiosk.conf
+        content: |
+          [Journal]
+          Storage=persistent
+          SystemMaxUse=500M
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart journald
+
+    - name: Phase 6 — Ensure /var/log/journal exists
+      ansible.builtin.file:
+        path: /var/log/journal
+        state: directory
+        owner: root
+        group: systemd-journal
+        mode: '2755'
+
+    # ============================================================
+    # Phase 7: Logrotate
+    # ============================================================
+    - name: Phase 7 — Seed a placeholder log file for logrotate validation
+      ansible.builtin.file:
+        path: "{{ kk_logs_dir }}/{{ kk_service_name }}.log"
+        state: touch
+        owner: root
+        group: "{{ kk_group }}"
+        mode: '0640'
+        modification_time: preserve
+        access_time: preserve
+
+    - name: Phase 7 — Ensure logrotate config is present
+      ansible.builtin.template:
+        src: logrotate-kijanikiosk.j2
+        dest: /etc/logrotate.d/kijanikiosk
+        owner: root
+        group: root
+        mode: '0644'
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart kk service
+      ansible.builtin.systemd:
+        name: "{{ kk_service_name }}.service"
+        state: restarted
+
+    - name: Restart journald
+      ansible.builtin.systemd:
+        name: systemd-journald
+        state: restarted

@@ -1,0 +1,13 @@
+---
+# API server specific configuration
+
+kk_service_name: kk-api
+kk_service_user: "{{ kk_api_user }}"
+kk_service_uid: "{{ kk_api_uid }}"
+kk_service_port: 3000
+
+# Environment file for the API service
+kk_env_file_content:
+  API_PORT: "3000"
+  API_ENV: "staging"
+  API_LOG_DIR: "{{ kk_logs_dir }}"

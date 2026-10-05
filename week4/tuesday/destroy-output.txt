@@ -1,0 +1,31 @@
+[0m[1mdata.external.vm_info: Reading...[0m[0m
+[0m[1mdata.external.vm_info: Read complete after 0s [id=-][0m
+[0m[1mnull_resource.kijanikiosk_api: Refreshing state... [id=4197981857562053201][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [31m-[0m destroy[0m
+
+Terraform will perform the following actions:
+
+[1m  # null_resource.kijanikiosk_api[0m will be [1m[31mdestroyed[0m
+[0m  [31m-[0m[0m resource "null_resource" "kijanikiosk_api" {
+      [31m-[0m[0m id       = "4197981857562053201" [90m-> null[0m[0m
+      [31m-[0m[0m triggers = {
+          [31m-[0m[0m "environment" = "staging"
+          [31m-[0m[0m "vm_ip"       = "10.32.18.62"
+        } [90m-> null[0m[0m
+    }
+
+[1mPlan:[0m [0m0 to add, 0 to change, 1 to destroy.
+
+Changes to Outputs:
+  [31m-[0m[0m api_server_hostname = "kijanikiosk-api" [90m-> null[0m[0m
+  [31m-[0m[0m api_server_ip       = "10.32.18.62" [90m-> null[0m[0m
+  [31m-[0m[0m connection_summary  = "Server 'kijanikiosk-api' in environment 'staging' is at 10.32.18.62" [90m-> null[0m[0m
+  [31m-[0m[0m environment         = "staging" [90m-> null[0m[0m
+  [31m-[0m[0m ssh_command         = "ssh -i ~/.ssh/id_rsa ubuntu@10.32.18.62" [90m-> null[0m[0m
+[0m[1mnull_resource.kijanikiosk_api: Destroying... [id=4197981857562053201][0m[0m
+[0m[1mnull_resource.kijanikiosk_api: Destruction complete after 0s[0m
+[0m[1m[32m
+Destroy complete! Resources: 1 destroyed.[0m

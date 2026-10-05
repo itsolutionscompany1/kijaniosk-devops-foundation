@@ -1,0 +1,12 @@
+---
+# Logs server specific configuration
+
+kk_service_name: kk-logs
+kk_service_user: "{{ kk_logs_user }}"
+kk_service_uid: "{{ kk_logs_uid }}"
+kk_service_port: 3002
+
+kk_env_file_content:
+  LOGS_PORT: "3002"
+  LOGS_ENV: "staging"
+  LOGS_DIR: "{{ kk_logs_dir }}"
