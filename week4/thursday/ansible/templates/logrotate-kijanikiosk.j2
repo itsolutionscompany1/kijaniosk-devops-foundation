@@ -1,0 +1,14 @@
+{{ kk_logs_dir }}/*.log {
+    daily
+    rotate 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    create 0640 root {{ kk_group }}
+    su root {{ kk_group }}
+    sharedscripts
+    postrotate
+        systemctl kill -s HUP kk-logs.service 2>/dev/null || true
+    endscript
+}
