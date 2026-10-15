@@ -1,0 +1,17 @@
+service: kk-payments-receipts
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    RECEIPT_BUCKET: kk-payments-receipts-${opt:stage, 'staging'}
+
+functions:
+  processor:
+    handler: handler.process
+    events:
+      - s3:
+          bucket: ${self:provider.environment.RECEIPT_BUCKET}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: .json
