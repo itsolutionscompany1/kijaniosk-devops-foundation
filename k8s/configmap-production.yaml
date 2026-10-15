@@ -1,8 +1,1 @@
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kk-payments-config
-  namespace: kijani-production
-data:
-  DB_HOST: "production-db.kijanikiosk.internal"
-  APP_VERSION: "1.0.0-production"
