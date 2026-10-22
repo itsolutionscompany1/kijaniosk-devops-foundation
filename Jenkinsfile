@@ -64,7 +64,8 @@ pipeline {
                 dir('week5/friday') {
                     archiveArtifacts artifacts: 'dist/**', fingerprint: true
                     script {
-                        def pkg = readJSON file: 'package.json'
+                        def pkgJson = readFile(file: 'package.json')
+                        def pkg = new groovy.json.JsonSlurper().parseText(pkgJson)
                         def shortSha = sh(script: 'git -C ../.. rev-parse --short HEAD', returnStdout: true).trim()
                         env.VERSION = "${pkg.version}-${shortSha}"
                         echo "Calculated version: ${env.VERSION}"
