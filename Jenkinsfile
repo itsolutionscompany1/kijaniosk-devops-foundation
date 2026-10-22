@@ -64,7 +64,7 @@ pipeline {
                 dir('week5/friday') {
                     archiveArtifacts artifacts: 'dist/**', fingerprint: true
                     script {
-                        def pkgVersion = sh(script: "grep -o '\"version\": \"[^\"]*\"' package.json | cut -d'\"' -f4", returnStdout: true).trim()
+                        def pkgVersion = sh(script: 'grep -o \'"version": "[^"]*"\' package.json | cut -d\'"\' -f4', returnStdout: true).trim()
                         def shortSha = env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'unknown'
                         env.VERSION = "${pkgVersion}-${shortSha}"
                         echo "Calculated version: ${env.VERSION}"
@@ -86,7 +86,7 @@ pipeline {
                             
                             cat > .npmrc <<NPMRC
 registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
-_auth=${NEXUS_USER}:${NEXUS_PASS}
+//${NEXUS_URL#*//}/repository/${NEXUS_REPO}/:_auth=${NEXUS_USER}:${NEXUS_PASS}
 email=ci@kijanikiosk.com
 always-auth=true
 NPMRC
