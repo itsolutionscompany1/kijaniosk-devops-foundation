@@ -85,13 +85,19 @@ pipeline {
                             # Change the version
                             npm pkg set version="${VERSION}"
                             
-                            # Generate a base64 token for authentication
-                            AUTH_TOKEN=$(echo -n "${NEXUS_USER}:${NEXUS_PASS}" | base64)
+                            # Write the .npmrc file with the exact URL path for the auth key
+                            cat > .npmrc <<NPMRC
+registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
+//${NEXUS_URL#*//}/repository/${NEXUS_REPO}/:_auth=${NEXUS_USER}:${NEXUS_PASS}
+email=ci@kijanikiosk.com
+always-auth=true
+NPMRC
                             
-                            # Publish using command-line flags only (no .npmrc file)
-                            npm publish \
-                              --registry="${NEXUS_URL}/repository/${NEXUS_REPO}/" \
-                              --//"${NEXUS_URL#*//}/repository/${NEXUS_REPO}/:_authToken"="${AUTH_TOKEN}"
+                            # Publish
+                            npm publish
+                            
+                            # Cleanup
+                            rm -f .npmrc
                         '''
                     }
                 }
