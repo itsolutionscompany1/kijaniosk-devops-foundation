@@ -2,34 +2,40 @@ pipeline {
     agent {
         docker {
             image 'node:20-alpine'
-            args '-u root:root -v /var/jenkins_home/.npm-cache:/root/.npm'
+            args '-u root:root'
         }
-    }
-
-    environment {
-        MINIO_URL    = 'http://172.17.0.1:9000'
-        MINIO_BUCKET = 'kijanikiosk-artifacts'
-        PACKAGE_NAME = 'kijanikiosk-payments'
     }
 
     options {
         timestamps()
-        timeout(time: 15, unit: 'MINUTES')
+        timeout(time: 15, unit: 'MINUTES') // Increased from 10 just to be safe during first run
+        skipDefaultCheckout(true)
+    }
+
+    environment {
+        MINIO_URL = 'http://172.17.0.1:9000' // Use Docker bridge to reach host MinIO
+        MINIO_BUCKET = 'kijanikiosk-artifacts'
+        APP_DIR = 'week5/friday'
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
         stage('Lint') {
             steps {
-                dir('week5/friday') {
-                    sh 'npm ci --prefer-offline --no-audit'
-                    sh 'npm run lint'
+                dir("${APP_DIR}") {
+                    sh 'npm ci --no-audit --no-fund && npm run lint'
                 }
             }
         }
 
         stage('Build') {
             steps {
-                dir('week5/friday') {
+                dir("${APP_DIR}") {
                     sh 'npm run build'
                 }
             }
@@ -39,7 +45,7 @@ pipeline {
             parallel {
                 stage('Test') {
                     steps {
-                        dir('week5/friday') {
+                        dir("${APP_DIR}") {
                             sh 'npm test'
                         }
                     }
@@ -51,7 +57,7 @@ pipeline {
                 }
                 stage('Security Audit') {
                     steps {
-                        dir('week5/friday') {
+                        dir("${APP_DIR}") {
                             sh 'npm run audit:security'
                         }
                     }
@@ -59,38 +65,34 @@ pipeline {
             }
         }
 
-        stage('Archive') {
+        stage('Archive & Publish') {
             steps {
-                dir('week5/friday') {
+                dir("${APP_DIR}") {
+                    // 1. Archive natively in Jenkins
                     archiveArtifacts artifacts: 'dist/**', fingerprint: true
+                    
+                    // 2. Compute Version
                     script {
-                        def pkgVersion = sh(script: 'grep -o \'"version": "[^"]*"\' package.json | cut -d\'"\' -f4', returnStdout: true).trim()
-                        def shortSha = env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'unknown'
-                        env.VERSION = "${pkgVersion}-g${shortSha}"
-                        echo "Calculated version: ${env.VERSION}"
+                        env.PKG_VERSION = sh(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
+                        env.GIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                        env.FULL_VERSION = "${env.PKG_VERSION}-${env.GIT_SHA}"
                     }
-                }
-            }
-        }
-
-        stage('Publish') {
-            steps {
-                dir('week5/friday') {
-                    withCredentials([usernamePassword(
-                        credentialsId: 'minio-credentials',
-                        usernameVariable: 'MINIO_USER',
-                        passwordVariable: 'MINIO_PASS'
-                    )]) {
+                    
+                    // 3. Package for MinIO
+                    sh "tar -czf /tmp/kijanikiosk-payments-${env.FULL_VERSION}.tar.gz -C dist ."
+                    
+                    // 4. Upload to MinIO
+                    withCredentials([usernamePassword(credentialsId: 'minio-credentials', usernameVariable: 'MINIO_USER', passwordVariable: 'MINIO_PASS')]) {
                         sh '''
-                            apk add --no-cache wget ca-certificates
-                            wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
+                            # Install minio client if not present in the node:20-alpine image
+                            wget -qO /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
                             chmod +x /usr/local/bin/mc
                             
-                            npm pkg set version="${VERSION}"
-                            npm pack
-                            
+                            # Configure client
                             mc alias set myminio ${MINIO_URL} ${MINIO_USER} ${MINIO_PASS}
-                            mc cp "${PACKAGE_NAME}-${VERSION}.tgz" myminio/${MINIO_BUCKET}/
+                            
+                            # Upload
+                            mc cp /tmp/kijanikiosk-payments-${FULL_VERSION}.tar.gz myminio/${MINIO_BUCKET}/
                         '''
                     }
                 }
@@ -103,10 +105,10 @@ pipeline {
             cleanWs()
         }
         success {
-            echo "Pipeline succeeded. Artifact published to MinIO bucket: ${MINIO_BUCKET}"
+            echo "Successfully published version ${env.FULL_VERSION} to MinIO bucket ${MINIO_BUCKET}"
         }
         failure {
-            echo "Pipeline failed. Please check the logs."
+            echo "Pipeline failed. Check logs."
         }
         changed {
             echo "Pipeline status changed to ${currentBuild.currentResult}"
