@@ -82,16 +82,24 @@ pipeline {
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
                         sh '''
-                            # Install curl for Alpine Linux
+                            # Install curl just in case
                             apk add --no-cache curl
                             
-                            # Set the version and pack the tarball
+                            # Set the version
                             npm pkg set version="${VERSION}"
-                            npm pack
                             
-                            # Upload the tarball directly to Nexus using curl
-                            TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
-                            curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" --upload-file "${TARBALL}" "${NEXUS_URL}/repository/${NEXUS_REPO}/${PACKAGE_NAME}/-/${TARBALL}"
+                            # Create .npmrc with the correct authentication syntax for npm v10
+                            cat > .npmrc <<NPMRC
+registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
+//${NEXUS_URL#*//}/repository/${NEXUS_REPO}/:_auth=${NEXUS_USER}:${NEXUS_PASS}
+email=ci@kijanikiosk.com
+always-auth=true
+NPMRC
+                            
+                            # Publish (using --registry to force it)
+                            npm publish --registry=${NEXUS_URL}/repository/${NEXUS_REPO}/ || exit 1
+                            
+                            rm -f .npmrc
                         '''
                     }
                 }
