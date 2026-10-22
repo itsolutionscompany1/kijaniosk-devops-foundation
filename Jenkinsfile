@@ -82,7 +82,7 @@ pipeline {
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
                         sh '''
-                            npm version ${VERSION} --no-git-tag-version
+                            npm pkg set version="${VERSION}"
                             
                             cat > .npmrc <<NPMRC
 registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
