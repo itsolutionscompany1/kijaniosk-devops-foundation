@@ -66,12 +66,7 @@ pipeline {
                     script {
                         def pkgVersion = sh(script: 'grep -o \'"version": "[^"]*"\' package.json | cut -d\'"\' -f4', returnStdout: true).trim()
                         def shortSha = env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'unknown'
-                        
-                        // Bump patch version to guarantee uniqueness
-                        def versionParts = pkgVersion.tokenize('.')
-                        def newPatch = versionParts[2].toInteger() + 1
-                        env.VERSION = "${versionParts[0]}.${versionParts[1]}.${newPatch}-g${shortSha}"
-                        
+                        env.VERSION = "${pkgVersion}-g${shortSha}"
                         echo "Calculated version: ${env.VERSION}"
                     }
                 }
@@ -87,19 +82,16 @@ pipeline {
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
                         sh '''
-                            # Update package.json version AND force the publishConfig registry
+                            # 1. Set the version and publish config
                             npm pkg set version="${VERSION}"
                             npm pkg set publishConfig.registry="${NEXUS_URL}/repository/${NEXUS_REPO}/"
                             
-                            cat > .npmrc <<NPMRC
-registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
-//${NEXUS_URL#*//}/repository/${NEXUS_REPO}/:_auth=${NEXUS_USER}:${NEXUS_PASS}
-email=ci@kijanikiosk.com
-always-auth=true
-NPMRC
+                            # 2. Pack the tarball
+                            npm pack
                             
-                            npm publish --registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
-                            rm -f .npmrc
+                            # 3. Upload the tarball directly to Nexus using curl
+                            TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
+                            curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" --upload-file "${TARBALL}" "${NEXUS_URL}/repository/${NEXUS_REPO}/${PACKAGE_NAME}/-/${TARBALL}"
                         '''
                     }
                 }
