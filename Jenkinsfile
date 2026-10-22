@@ -71,7 +71,7 @@ pipeline {
                     
                     script {
                         env.PKG_VERSION = sh(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
-                        env.GIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                        env.GIT_SHA = env.GIT_COMMIT.take(7)
                         env.FULL_VERSION = "${env.PKG_VERSION}-${env.GIT_SHA}"
                     }
                     
@@ -79,11 +79,16 @@ pipeline {
                     
                     withCredentials([usernamePassword(credentialsId: 'minio-credentials', usernameVariable: 'MINIO_USER', passwordVariable: 'MINIO_PASS')]) {
                         sh '''
+                            # Install MinIO client if not already there
                             if ! command -v mc &> /dev/null; then
                                 wget -qO /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
                                 chmod +x /usr/local/bin/mc
                             fi
+                            
+                            # Configure client
                             mc alias set myminio ${MINIO_URL} ${MINIO_USER} ${MINIO_PASS}
+                            
+                            # Ensure bucket exists, then upload
                             mc mb myminio/${MINIO_BUCKET} --ignore-existing
                             mc cp /tmp/kijanikiosk-payments-${FULL_VERSION}.tar.gz myminio/${MINIO_BUCKET}/
                         '''
