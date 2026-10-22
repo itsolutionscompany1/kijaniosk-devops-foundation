@@ -8,12 +8,12 @@ pipeline {
 
     options {
         timestamps()
-        timeout(time: 15, unit: 'MINUTES') // Increased from 10 just to be safe during first run
+        timeout(time: 15, unit: 'MINUTES') // Increased to 15 to safely avoid mid-build aborts
         skipDefaultCheckout(true)
     }
 
     environment {
-        MINIO_URL = 'http://172.17.0.1:9000' // Use Docker bridge to reach host MinIO
+        MINIO_URL = 'http://172.17.0.1:9000' // Uses Docker bridge to talk to host MinIO
         MINIO_BUCKET = 'kijanikiosk-artifacts'
         APP_DIR = 'week5/friday'
     }
@@ -68,10 +68,10 @@ pipeline {
         stage('Archive & Publish') {
             steps {
                 dir("${APP_DIR}") {
-                    // 1. Archive natively in Jenkins
+                    // 1. Archive in Jenkins natively
                     archiveArtifacts artifacts: 'dist/**', fingerprint: true
                     
-                    // 2. Compute Version
+                    // 2. Compute Version (SemVer + Git SHA)
                     script {
                         env.PKG_VERSION = sh(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
                         env.GIT_SHA = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
@@ -84,14 +84,17 @@ pipeline {
                     // 4. Upload to MinIO
                     withCredentials([usernamePassword(credentialsId: 'minio-credentials', usernameVariable: 'MINIO_USER', passwordVariable: 'MINIO_PASS')]) {
                         sh '''
-                            # Install minio client if not present in the node:20-alpine image
-                            wget -qO /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
-                            chmod +x /usr/local/bin/mc
+                            # Install MinIO client if not already there
+                            if ! command -v mc &> /dev/null; then
+                                wget -qO /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
+                                chmod +x /usr/local/bin/mc
+                            fi
                             
                             # Configure client
                             mc alias set myminio ${MINIO_URL} ${MINIO_USER} ${MINIO_PASS}
                             
-                            # Upload
+                            # Ensure bucket exists, then upload
+                            mc mb myminio/${MINIO_BUCKET} --ignore-existing
                             mc cp /tmp/kijanikiosk-payments-${FULL_VERSION}.tar.gz myminio/${MINIO_BUCKET}/
                         '''
                     }
@@ -102,7 +105,9 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            node {
+                cleanWs()
+            }
         }
         success {
             echo "Successfully published version ${env.FULL_VERSION} to MinIO bucket ${MINIO_BUCKET}"
