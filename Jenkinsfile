@@ -12,7 +12,7 @@ pipeline {
     }
 
     environment {
-        MINIO_URL = 'http://172.17.0.1:9000'
+        MINIO_URL = 'http://10.58.226.84:9000'
         MINIO_BUCKET = 'kijanikiosk-artifacts'
         APP_DIR = 'week5/friday'
     }
