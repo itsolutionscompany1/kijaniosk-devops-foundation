@@ -82,14 +82,14 @@ pipeline {
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
                         sh '''
-                            # 1. Set the version and publish config
-                            npm pkg set version="${VERSION}"
-                            npm pkg set publishConfig.registry="${NEXUS_URL}/repository/${NEXUS_REPO}/"
+                            # Install curl for Alpine Linux
+                            apk add --no-cache curl
                             
-                            # 2. Pack the tarball
+                            # Set the version and pack the tarball
+                            npm pkg set version="${VERSION}"
                             npm pack
                             
-                            # 3. Upload the tarball directly to Nexus using curl
+                            # Upload the tarball directly to Nexus using curl
                             TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
                             curl -v -u "${NEXUS_USER}:${NEXUS_PASS}" --upload-file "${TARBALL}" "${NEXUS_URL}/repository/${NEXUS_REPO}/${PACKAGE_NAME}/-/${TARBALL}"
                         '''
