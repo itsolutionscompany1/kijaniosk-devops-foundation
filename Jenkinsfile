@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'node:20-alpine'
-            args '-u root:root'
+            args '-u root:root -v /var/jenkins_home/.npm-cache:/root/.npm'
         }
     }
 
@@ -14,14 +14,14 @@ pipeline {
 
     options {
         timestamps()
-        timeout(time: 10, unit: 'MINUTES')
+        timeout(time: 15, unit: 'MINUTES')
     }
 
     stages {
         stage('Lint') {
             steps {
                 dir('week5/friday') {
-                    sh 'npm ci'
+                    sh 'npm ci --prefer-offline --no-audit'
                     sh 'npm run lint'
                 }
             }
@@ -82,19 +82,14 @@ pipeline {
                         passwordVariable: 'MINIO_PASS'
                     )]) {
                         sh '''
-                            # Install wget and download the MinIO Client
                             apk add --no-cache wget ca-certificates
                             wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
                             chmod +x /usr/local/bin/mc
                             
-                            # Set the version and pack the artifact
                             npm pkg set version="${VERSION}"
                             npm pack
                             
-                            # Configure mc to connect to your MinIO instance
                             mc alias set myminio ${MINIO_URL} ${MINIO_USER} ${MINIO_PASS}
-                            
-                            # Upload the tarball to the bucket
                             mc cp "${PACKAGE_NAME}-${VERSION}.tgz" myminio/${MINIO_BUCKET}/
                         '''
                     }
