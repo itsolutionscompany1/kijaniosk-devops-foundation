@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'node:20-alpine'
-            args '-u root:root'
+            args '-u root:root --network kijani-net'
         }
     }
 
@@ -12,7 +12,7 @@ pipeline {
     }
 
     environment {
-        MINIO_URL = 'http://10.58.226.84:9000'
+        MINIO_URL = 'http://minio:9000'
         MINIO_BUCKET = 'kijanikiosk-artifacts'
         APP_DIR = 'week5/friday'
     }
