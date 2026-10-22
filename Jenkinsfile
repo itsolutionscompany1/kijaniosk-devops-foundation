@@ -66,7 +66,8 @@ pipeline {
                     script {
                         def pkgVersion = sh(script: 'grep -o \'"version": "[^"]*"\' package.json | cut -d\'"\' -f4', returnStdout: true).trim()
                         def shortSha = env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'unknown'
-                        env.VERSION = "${pkgVersion}+${shortSha}"
+                        // Prepend 'g' so the version is strictly valid SemVer and Nexus accepts it
+                        env.VERSION = "${pkgVersion}-g${shortSha}"
                         echo "Calculated version: ${env.VERSION}"
                     }
                 }
