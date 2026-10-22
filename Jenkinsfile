@@ -20,14 +20,18 @@ pipeline {
     stages {
         stage('Lint') {
             steps {
-                sh 'npm ci'
-                sh 'npm run lint'
+                dir('week5/friday') {
+                    sh 'npm ci'
+                    sh 'npm run lint'
+                }
             }
         }
 
         stage('Build') {
             steps {
-                sh 'npm run build'
+                dir('week5/friday') {
+                    sh 'npm run build'
+                }
             }
         }
 
@@ -35,17 +39,21 @@ pipeline {
             parallel {
                 stage('Test') {
                     steps {
-                        sh 'npm test'
+                        dir('week5/friday') {
+                            sh 'npm test'
+                        }
                     }
                     post {
                         always {
-                            junit allowEmptyResults: true, testResults: 'test-results/junit.xml'
+                            junit allowEmptyResults: true, testResults: 'week5/friday/test-results/junit.xml'
                         }
                     }
                 }
                 stage('Security Audit') {
                     steps {
-                        sh 'npm run audit:security'
+                        dir('week5/friday') {
+                            sh 'npm run audit:security'
+                        }
                     }
                 }
             }
@@ -53,36 +61,40 @@ pipeline {
 
         stage('Archive') {
             steps {
-                archiveArtifacts artifacts: 'dist/**', fingerprint: true
-                script {
-                    def pkg = readJSON file: 'package.json'
-                    def shortSha = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
-                    env.VERSION = "${pkg.version}-${shortSha}"
-                    echo "Calculated version: ${env.VERSION}"
+                dir('week5/friday') {
+                    archiveArtifacts artifacts: 'dist/**', fingerprint: true
+                    script {
+                        def pkg = readJSON file: 'package.json'
+                        def shortSha = sh(script: 'git -C ../.. rev-parse --short HEAD', returnStdout: true).trim()
+                        env.VERSION = "${pkg.version}-${shortSha}"
+                        echo "Calculated version: ${env.VERSION}"
+                    }
                 }
             }
         }
 
         stage('Publish') {
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'nexus-credentials',
-                    usernameVariable: 'NEXUS_USER',
-                    passwordVariable: 'NEXUS_PASS'
-                )]) {
-                    sh '''
-                        npm version ${VERSION} --no-git-tag-version
-                        
-                        cat > .npmrc <<NPMRC
+                dir('week5/friday') {
+                    withCredentials([usernamePassword(
+                        credentialsId: 'nexus-credentials',
+                        usernameVariable: 'NEXUS_USER',
+                        passwordVariable: 'NEXUS_PASS'
+                    )]) {
+                        sh '''
+                            npm version ${VERSION} --no-git-tag-version
+                            
+                            cat > .npmrc <<NPMRC
 registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
 _auth=${NEXUS_USER}:${NEXUS_PASS}
 email=ci@kijanikiosk.com
 always-auth=true
 NPMRC
-                        
-                        npm publish
-                        rm -f .npmrc
-                    '''
+                            
+                            npm publish
+                            rm -f .npmrc
+                        '''
+                    }
                 }
             }
         }
