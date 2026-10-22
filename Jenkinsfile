@@ -64,10 +64,9 @@ pipeline {
                 dir('week5/friday') {
                     archiveArtifacts artifacts: 'dist/**', fingerprint: true
                     script {
-                        def pkgJson = readFile(file: 'package.json')
-                        def pkg = new groovy.json.JsonSlurper().parseText(pkgJson)
-                        def shortSha = sh(script: 'git -C ../.. rev-parse --short HEAD', returnStdout: true).trim()
-                        env.VERSION = "${pkg.version}-${shortSha}"
+                        def pkgVersion = sh(script: "grep -o '\"version\": \"[^\"]*\"' package.json | cut -d'\"' -f4", returnStdout: true).trim()
+                        def shortSha = env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'unknown'
+                        env.VERSION = "${pkgVersion}-${shortSha}"
                         echo "Calculated version: ${env.VERSION}"
                     }
                 }
