@@ -7,8 +7,8 @@ pipeline {
     }
 
     environment {
-        NEXUS_URL    = 'http://172.17.0.1:8081'
-        NEXUS_REPO   = 'npm-hosted'
+        MINIO_URL    = 'http://172.17.0.1:9000'
+        MINIO_BUCKET = 'kijanikiosk-artifacts'
         PACKAGE_NAME = 'kijanikiosk-payments'
     }
 
@@ -77,30 +77,25 @@ pipeline {
             steps {
                 dir('week5/friday') {
                     withCredentials([usernamePassword(
-                        credentialsId: 'nexus-credentials',
-                        usernameVariable: 'NEXUS_USER',
-                        passwordVariable: 'NEXUS_PASS'
+                        credentialsId: 'minio-credentials',
+                        usernameVariable: 'MINIO_USER',
+                        passwordVariable: 'MINIO_PASS'
                     )]) {
                         sh '''
-                            # Change the version
+                            # Install wget and download the MinIO Client
+                            apk add --no-cache wget ca-certificates
+                            wget https://dl.min.io/client/mc/release/linux-amd64/mc -O /usr/local/bin/mc
+                            chmod +x /usr/local/bin/mc
+                            
+                            # Set the version and pack the artifact
                             npm pkg set version="${VERSION}"
+                            npm pack
                             
-                            # Create a unique timestamp file to change the tarball hash
-                            date > timestamp.txt
+                            # Configure mc to connect to your MinIO instance
+                            mc alias set myminio ${MINIO_URL} ${MINIO_USER} ${MINIO_PASS}
                             
-                            # Create .npmrc with the correct auth syntax
-                            cat > .npmrc <<NPMRC
-registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
-//${NEXUS_URL#*//}/repository/${NEXUS_REPO}/:_auth=${NEXUS_USER}:${NEXUS_PASS}
-email=ci@kijanikiosk.com
-always-auth=true
-NPMRC
-                            
-                            # Publish
-                            npm publish
-                            
-                            # Cleanup
-                            rm -f .npmrc timestamp.txt
+                            # Upload the tarball to the bucket
+                            mc cp "${PACKAGE_NAME}-${VERSION}.tgz" myminio/${MINIO_BUCKET}/
                         '''
                     }
                 }
@@ -113,7 +108,7 @@ NPMRC
             cleanWs()
         }
         success {
-            echo "Pipeline succeeded. Artifact published to ${NEXUS_URL}/repository/${NEXUS_REPO}/${PACKAGE_NAME}/"
+            echo "Pipeline succeeded. Artifact published to MinIO bucket: ${MINIO_BUCKET}"
         }
         failure {
             echo "Pipeline failed. Please check the logs."
