@@ -82,21 +82,25 @@ pipeline {
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
                         sh '''
-                            # Install curl for Alpine Linux
-                            apk add --no-cache curl
-                            
-                            # Set the version
+                            # Change the version
                             npm pkg set version="${VERSION}"
                             
-                            # Build the tarball
-                            npm pack
+                            # Create a unique timestamp file to change the tarball hash
+                            date > timestamp.txt
                             
-                            # Upload via Nexus REST API (Raw upload endpoint)
-                            TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
-                            curl -f -u "${NEXUS_USER}:${NEXUS_PASS}" \
-                              -H "Content-Type: application/x-compressed" \
-                              --upload-file "${TARBALL}" \
-                              "${NEXUS_URL}/service/rest/v1/components?repository=${NEXUS_REPO}"
+                            # Create .npmrc with the correct auth syntax
+                            cat > .npmrc <<NPMRC
+registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
+//${NEXUS_URL#*//}/repository/${NEXUS_REPO}/:_auth=${NEXUS_USER}:${NEXUS_PASS}
+email=ci@kijanikiosk.com
+always-auth=true
+NPMRC
+                            
+                            # Publish
+                            npm publish
+                            
+                            # Cleanup
+                            rm -f .npmrc timestamp.txt
                         '''
                     }
                 }
