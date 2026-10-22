@@ -81,7 +81,7 @@ pipeline {
                         sh '''
                             # Install MinIO client if not already there
                             if ! command -v mc &> /dev/null; then
-                                wget -qO /usr/local/bin/mc https://dl.min.io/client/mc/release/linux-amd64/mc
+                                wget -qO /usr/local/bin/mc https://dl.min.io/aistor/mc/release/linux-amd64/mc
                                 chmod +x /usr/local/bin/mc
                             fi
                             
