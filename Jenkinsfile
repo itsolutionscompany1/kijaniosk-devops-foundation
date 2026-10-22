@@ -91,9 +91,12 @@ pipeline {
                             # Build the tarball
                             npm pack
                             
-                            # Upload via Nexus REST API (uses the @ endpoint for raw tarballs)
+                            # Upload via Nexus REST API (Raw upload endpoint)
                             TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
-                            curl -f -u "${NEXUS_USER}:${NEXUS_PASS}" --upload-file "${TARBALL}" "${NEXUS_URL}/repository/${NEXUS_REPO}/${PACKAGE_NAME}/@/${TARBALL}"
+                            curl -f -u "${NEXUS_USER}:${NEXUS_PASS}" \
+                              -H "Content-Type: application/x-compressed" \
+                              --upload-file "${TARBALL}" \
+                              "${NEXUS_URL}/service/rest/v1/components?repository=${NEXUS_REPO}"
                         '''
                     }
                 }
