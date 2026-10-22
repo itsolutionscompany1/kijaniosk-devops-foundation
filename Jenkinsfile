@@ -64,16 +64,14 @@ pipeline {
                 dir('week5/friday') {
                     archiveArtifacts artifacts: 'dist/**', fingerprint: true
                     script {
-                        // Get current version and bump patch to avoid conflicts
                         def pkgVersion = sh(script: 'grep -o \'"version": "[^"]*"\' package.json | cut -d\'"\' -f4', returnStdout: true).trim()
                         def shortSha = env.GIT_COMMIT ? env.GIT_COMMIT.take(7) : 'unknown'
                         
-                        // Bump patch version (1.0.0 -> 1.0.1)
+                        // Bump patch version to guarantee uniqueness
                         def versionParts = pkgVersion.tokenize('.')
                         def newPatch = versionParts[2].toInteger() + 1
-                        def newVersion = "${versionParts[0]}.${versionParts[1]}.${newPatch}-g${shortSha}"
+                        env.VERSION = "${versionParts[0]}.${versionParts[1]}.${newPatch}-g${shortSha}"
                         
-                        env.VERSION = newVersion
                         echo "Calculated version: ${env.VERSION}"
                     }
                 }
@@ -89,7 +87,9 @@ pipeline {
                         passwordVariable: 'NEXUS_PASS'
                     )]) {
                         sh '''
+                            # Update package.json version AND force the publishConfig registry
                             npm pkg set version="${VERSION}"
+                            npm pkg set publishConfig.registry="${NEXUS_URL}/repository/${NEXUS_REPO}/"
                             
                             cat > .npmrc <<NPMRC
 registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
@@ -98,7 +98,7 @@ email=ci@kijanikiosk.com
 always-auth=true
 NPMRC
                             
-                            npm publish
+                            npm publish --registry=${NEXUS_URL}/repository/${NEXUS_REPO}/
                             rm -f .npmrc
                         '''
                     }
