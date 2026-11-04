@@ -1,0 +1,24 @@
+[0m[1mdata.external.vm_info: Reading...[0m[0m
+[0m[1mdata.external.vm_info: Read complete after 0s [id=-][0m
+[0m[1mnull_resource.kijanikiosk_api: Refreshing state... [id=2856421448125263078][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+[31m-[0m/[32m+[0m destroy and then create replacement[0m
+
+Terraform will perform the following actions:
+
+[1m  # null_resource.kijanikiosk_api[0m is tainted, so must be [1m[31mreplaced[0m
+[0m[31m-[0m/[32m+[0m[0m resource "null_resource" "kijanikiosk_api" {
+      [33m~[0m[0m id       = "2856421448125263078" -> (known after apply)
+        [90m# (1 unchanged attribute hidden)[0m[0m
+    }
+
+[1mPlan:[0m [0m1 to add, 0 to change, 1 to destroy.
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Saved the plan to: lab-plan.tfplan
+
+To perform exactly these actions, run the following command to apply:
+    terraform apply "lab-plan.tfplan"

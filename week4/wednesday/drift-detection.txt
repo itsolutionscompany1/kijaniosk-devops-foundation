@@ -1,0 +1,93 @@
+[0m[1mmodule.app_servers["api"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["logs"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["payments"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["api"].data.external.vm_info: Read complete after 1s [id=-][0m
+[0m[1mmodule.app_servers["logs"].data.external.vm_info: Read complete after 1s [id=-][0m
+
+[0m[1m[31mPlanning failed.[0m[1m Terraform encountered an error while generating this plan.[0m
+
+[0m[31m╷[0m[0m
+[31m│[0m [0m[1m[31mError: [0m[0m[1mUnexpected External Program Results[0m
+[31m│[0m [0m
+[31m│[0m [0m[0m  with module.app_servers["payments"].data.external.vm_info,
+[31m│[0m [0m  on modules/app_server/main.tf line 15, in data "external" "vm_info":
+[31m│[0m [0m  15:   program = [4m["bash", "-c", <<-EOT
+[31m│[0m [0m  16:     multipass info ${var.vm_name} --format json | \
+[31m│[0m [0m  17:     jq -c '{"ip": .info["${var.vm_name}"].ipv4[0]}'
+[31m│[0m [0m  18:   EOT
+[31m│[0m [0m  19:   ][0m[0m
+[31m│[0m [0m
+[31m│[0m [0mThe data source received unexpected results after executing the program.
+[31m│[0m [0m
+[31m│[0m [0mProgram output must be a JSON encoded map of string keys and string values.
+[31m│[0m [0m
+[31m│[0m [0mIf the error is unclear, the output can be viewed by enabling Terraform's
+[31m│[0m [0mlogging at TRACE level. Terraform documentation on logging:
+[31m│[0m [0mhttps://www.terraform.io/internals/debugging
+[31m│[0m [0m
+[31m│[0m [0mProgram: /usr/bin/bash
+[31m│[0m [0mResult Error: unexpected end of JSON input
+[31m╵[0m[0m
+
+# =====================================================================
+# Drift Detection Exercise — Notes
+# =====================================================================
+
+# What we simulated:
+# We changed the vm_name for the payments module instance from
+# "kijanikiosk-payments" to "kijanikiosk-payments-drifted". This
+# simulates an out-of-band change — for example, someone renaming the
+# VM in the Multipass UI or a script renaming it outside Terraform.
+
+# What Terraform detected:
+# Running terraform plan after the change showed that the config no
+# longer matches reality. The data source that reads the VM's IP from
+# multipass info either failed (VM not found) or resolved to a different
+# value, causing the null_resource's triggers to differ from state.
+# Either way, Terraform reported the discrepancy — which is the essence
+# of drift detection.
+
+# Remediation decision:
+# We chose to REMEDIATE (restore declared state), not ACCEPT (update
+# config to match reality). Reason: the drift was introduced as a
+# simulation, not as a deliberate infrastructure change. In a real
+# production scenario, if the team had intentionally renamed the VM,
+# we would have chosen ACCEPT instead — and updated main.tf to reflect
+# the new name, then re-applied to sync state.
+
+# After remediation:
+# Reverting main.tf to the original vm_name, and confirming the VM was
+# still named "kijanikiosk-payments", produced "No changes" on the next
+# plan. Terraform confirmed the config and reality now match.
+
+# Limitation of the Multipass path:
+# A null_resource only tracks its explicit triggers (vm_name, vm_ip,
+# environment). It does not track attributes of the VM itself like
+# instance_type, disk size, or OS version. On a real cloud provider,
+# the equivalent resource (aws_instance, google_compute_instance) tracks
+# those attributes and would detect drift on any of them. The Multipass
+# path teaches the mechanics of drift detection but does not offer the
+# same coverage. This is documented as a known limitation of the
+# primary path.
+
+# =====================================================================
+
+# =====================================================================
+# Post-Remediation Confirmation
+# =====================================================================
+
+# After reverting main.tf to the original vm_name ("kijanikiosk-payments"),
+# the next terraform plan returned:
+#
+#   No changes. Your infrastructure matches the configuration.
+#
+# This confirms:
+#   1. The drift was successfully detected (in the pre-remediation plan)
+#   2. The remediation (reverting config) restored the desired state
+#   3. Terraform's state file and reality are back in sync
+#
+# The complete exercise:
+#   - Baseline:  no changes (infrastructure matches config)
+#   - Drift:     config changed, plan failed with data source error
+#   - Remediation: config reverted, plan returns to no changes
+# =====================================================================

@@ -1,0 +1,28 @@
+=== Version Computation ===
+VERSION=1.0.0
+GITSHA=82a9226
+TAG=1.0.0-82a9226
+
+=== Push Output ===
+The push refers to repository [localhost:5000/kk-payments]
+0dbbd39f7c6e: Already exists
+44136fa355b3: Already exists
+fff4e2c1b189: Layer already exists
+6a0ac1617861: Layer already exists
+de71a8358e24: Layer already exists
+bcd2d529c5ef: Layer already exists
+a72de6a67669: Layer already exists
+4feea04c1543: Layer already exists
+b2cbbfe903b0: Layer already exists
+2e32122a865d: Layer already exists
+13e4471027c5: Layer already exists
+1.0.0-82a9226: digest: sha256:3993794d3c34073a51c4b770249cc23365404ff11ac3466ef8bd06a4623c9cbc size: 856
+
+=== Delete Local Image to Prove Registry is Truth ===
+Untagged: localhost:5000/kk-payments:1.0.0-82a9226
+
+=== Pull Output ===
+1.0.0-82a9226: Pulling from kk-payments
+Digest: sha256:3993794d3c34073a51c4b770249cc23365404ff11ac3466ef8bd06a4623c9cbc
+Status: Downloaded newer image for localhost:5000/kk-payments:1.0.0-82a9226
+localhost:5000/kk-payments:1.0.0-82a9226

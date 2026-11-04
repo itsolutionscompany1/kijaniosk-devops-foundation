@@ -1,0 +1,71 @@
+[0m[1mmodule.app_servers["logs"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["api"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["payments"].data.external.vm_info: Reading...[0m[0m
+[0m[1mmodule.app_servers["logs"].data.external.vm_info: Read complete after 0s [id=-][0m
+[0m[1mmodule.app_servers["api"].data.external.vm_info: Read complete after 0s [id=-][0m
+[0m[1mmodule.app_servers["payments"].data.external.vm_info: Read complete after 1s [id=-][0m
+[0m[1mmodule.app_servers["logs"].null_resource.this: Refreshing state... [id=4687474680034084214][0m
+[0m[1mmodule.app_servers["api"].null_resource.this: Refreshing state... [id=7301039190475966483][0m
+[0m[1mmodule.app_servers["payments"].null_resource.this: Refreshing state... [id=2211437849134869826][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [31m-[0m destroy[0m
+
+Terraform will perform the following actions:
+
+[1m  # module.app_servers["api"].null_resource.this[0m will be [1m[31mdestroyed[0m
+[0m  [31m-[0m[0m resource "null_resource" "this" {
+      [31m-[0m[0m id       = "7301039190475966483" [90m-> null[0m[0m
+      [31m-[0m[0m triggers = {
+          [31m-[0m[0m "environment" = "staging"
+          [31m-[0m[0m "vm_ip"       = "10.32.18.62"
+          [31m-[0m[0m "vm_name"     = "kijanikiosk-api"
+        } [90m-> null[0m[0m
+    }
+
+[1m  # module.app_servers["logs"].null_resource.this[0m will be [1m[31mdestroyed[0m
+[0m  [31m-[0m[0m resource "null_resource" "this" {
+      [31m-[0m[0m id       = "4687474680034084214" [90m-> null[0m[0m
+      [31m-[0m[0m triggers = {
+          [31m-[0m[0m "environment" = "staging"
+          [31m-[0m[0m "vm_ip"       = "10.32.18.61"
+          [31m-[0m[0m "vm_name"     = "kijanikiosk-logs"
+        } [90m-> null[0m[0m
+    }
+
+[1m  # module.app_servers["payments"].null_resource.this[0m will be [1m[31mdestroyed[0m
+[0m  [31m-[0m[0m resource "null_resource" "this" {
+      [31m-[0m[0m id       = "2211437849134869826" [90m-> null[0m[0m
+      [31m-[0m[0m triggers = {
+          [31m-[0m[0m "environment" = "staging"
+          [31m-[0m[0m "vm_ip"       = "10.32.18.198"
+          [31m-[0m[0m "vm_name"     = "kijanikiosk-payments"
+        } [90m-> null[0m[0m
+    }
+
+[1mPlan:[0m [0m0 to add, 0 to change, 3 to destroy.
+
+Changes to Outputs:
+  [31m-[0m[0m all_server_ips     = {
+      [31m-[0m[0m api      = "10.32.18.62"
+      [31m-[0m[0m logs     = "10.32.18.61"
+      [31m-[0m[0m payments = "10.32.18.198"
+    } [90m-> null[0m[0m
+  [31m-[0m[0m api_server_ip      = "10.32.18.62" [90m-> null[0m[0m
+  [31m-[0m[0m environment        = "staging" [90m-> null[0m[0m
+  [31m-[0m[0m logs_server_ip     = "10.32.18.61" [90m-> null[0m[0m
+  [31m-[0m[0m payments_server_ip = "10.32.18.198" [90m-> null[0m[0m
+  [31m-[0m[0m ssh_commands       = {
+      [31m-[0m[0m api      = "ssh -i ~/.ssh/id_rsa ubuntu@10.32.18.62"
+      [31m-[0m[0m logs     = "ssh -i ~/.ssh/id_rsa ubuntu@10.32.18.61"
+      [31m-[0m[0m payments = "ssh -i ~/.ssh/id_rsa ubuntu@10.32.18.198"
+    } [90m-> null[0m[0m
+[0m[1mmodule.app_servers["logs"].null_resource.this: Destroying... [id=4687474680034084214][0m[0m
+[0m[1mmodule.app_servers["api"].null_resource.this: Destroying... [id=7301039190475966483][0m[0m
+[0m[1mmodule.app_servers["payments"].null_resource.this: Destroying... [id=2211437849134869826][0m[0m
+[0m[1mmodule.app_servers["api"].null_resource.this: Destruction complete after 0s[0m
+[0m[1mmodule.app_servers["payments"].null_resource.this: Destruction complete after 0s[0m
+[0m[1mmodule.app_servers["logs"].null_resource.this: Destruction complete after 0s[0m
+[0m[1m[32m
+Destroy complete! Resources: 3 destroyed.[0m
