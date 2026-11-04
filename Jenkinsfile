@@ -1,20 +1,11 @@
 pipeline {
-    agent {
-        docker {
-            image 'node:20-alpine'
-            args '-u root:root --network kijani-net'
-        }
-    }
-
-    options {
-        timestamps()
-        timeout(time: 15, unit: 'MINUTES')
-    }
+    agent any
 
     environment {
-        MINIO_URL = 'http://minio:9000'
-        MINIO_BUCKET = 'kijanikiosk-artifacts'
-        APP_DIR = 'week5/friday'
+        REGISTRY = "localhost:5000"
+        IMAGE_NAME = "kk-payments"
+        STAGING_NS = "kijani-staging"
+        PROD_NS = "kijani-production"
     }
 
     stages {
@@ -24,75 +15,57 @@ pipeline {
             }
         }
 
-        stage('Lint') {
+        stage('Build & Push Image') {
             steps {
-                dir("${APP_DIR}") {
-                    sh 'npm ci --no-audit --no-fund && npm run lint'
-                }
-            }
-        }
-
-        stage('Build') {
-            steps {
-                dir("${APP_DIR}") {
-                    sh 'npm run build'
-                }
-            }
-        }
-
-        stage('Verify') {
-            parallel {
-                stage('Test') {
-                    steps {
-                        dir("${APP_DIR}") {
-                            sh 'npm test'
-                        }
-                    }
-                    post {
-                        always {
-                            junit allowEmptyResults: true, testResults: 'week5/friday/test-results/junit.xml'
-                        }
-                    }
-                }
-                stage('Security Audit') {
-                    steps {
-                        dir("${APP_DIR}") {
-                            sh 'npm run audit:security'
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Archive & Publish') {
-            steps {
-                dir("${APP_DIR}") {
-                    archiveArtifacts artifacts: 'dist/**', fingerprint: true
-                    
+                dir('apps/kk-payments') {
                     script {
-                        env.PKG_VERSION = sh(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
+                        env.VERSION = sh(script: 'node -p "require(\'./package.json\').version"', returnStdout: true).trim()
                         env.GIT_SHA = env.GIT_COMMIT.take(7)
-                        env.FULL_VERSION = "${env.PKG_VERSION}-${env.GIT_SHA}"
+                        env.TAG = "${env.VERSION}-${env.GIT_SHA}"
                     }
-                    
-                    sh "tar -czf /tmp/kijanikiosk-payments-${env.FULL_VERSION}.tar.gz -C dist ."
-                    
-                    withCredentials([usernamePassword(credentialsId: 'minio-credentials', usernameVariable: 'MINIO_USER', passwordVariable: 'MINIO_PASS')]) {
-                        sh '''
-                            # Install MinIO client if not already there
-                            if ! command -v mc &> /dev/null; then
-                                wget -qO /usr/local/bin/mc https://dl.min.io/aistor/mc/release/linux-amd64/mc
-                                chmod +x /usr/local/bin/mc
-                            fi
-                            
-                            # Configure client
-                            mc alias set myminio ${MINIO_URL} ${MINIO_USER} ${MINIO_PASS}
-                            
-                            # Ensure bucket exists, then upload
-                            mc mb myminio/${MINIO_BUCKET} --ignore-existing
-                            mc cp /tmp/kijanikiosk-payments-${FULL_VERSION}.tar.gz myminio/${MINIO_BUCKET}/
-                        '''
+                    sh "docker build --no-cache -f Dockerfile.production -t ${REGISTRY}/${IMAGE_NAME}:${TAG} ."
+                    sh "docker push ${REGISTRY}/${IMAGE_NAME}:${TAG}"
+                }
+            }
+        }
+
+        stage('Deploy to Staging') {
+            steps {
+                script {
+                    sh "kubectl apply -f infrastructure/terraform/main.tf" // Just to ensure namespaces exist
+                    sh "kubectl apply -f k8s/configmap-staging.yaml"
+                    sh "kubectl apply -f k8s/deployment.yaml -n ${STAGING_NS}"
+                    sh "kubectl apply -f k8s/service.yaml -n ${STAGING_NS}"
+                }
+            }
+        }
+
+        stage('Smoke Test Staging') {
+            steps {
+                script {
+                    // Wait for rollout
+                    sh "kubectl rollout status deployment/kk-payments -n ${STAGING_NS} --timeout=90s"
+                    // Curl the health endpoint (using NodePort or port-forward)
+                    sh "kubectl port-forward svc/kk-payments-service 3001:3001 -n ${STAGING_NS} &"
+                    sleep 5
+                    def response = sh(script: "curl -s http://localhost:3001/health", returnStdout: true).trim()
+                    echo "Smoke Test Response: ${response}"
+                    if (!response.contains("healthy")) {
+                        error("Smoke test failed: Invalid response")
                     }
+                    sh "kill %1 || true"
+                }
+            }
+        }
+
+        stage('Deploy to Production (Approval)') {
+            steps {
+                // This requires the 'input' step which pauses the pipeline
+                input message: "Smoke test passed. Approve deployment to production?", ok: "Deploy"
+                script {
+                    sh "kubectl apply -f k8s/configmap-production.yaml"
+                    sh "kubectl apply -f k8s/deployment.yaml -n ${PROD_NS}"
+                    sh "kubectl apply -f k8s/service.yaml -n ${PROD_NS}"
                 }
             }
         }
@@ -103,13 +76,10 @@ pipeline {
             cleanWs()
         }
         success {
-            echo "Successfully published version ${env.FULL_VERSION} to MinIO bucket ${MINIO_BUCKET}"
+            echo "Pipeline completed successfully."
         }
         failure {
-            echo "Pipeline failed. Check logs."
-        }
-        changed {
-            echo "Pipeline status changed to ${currentBuild.currentResult}"
+            echo "Pipeline failed."
         }
     }
 }

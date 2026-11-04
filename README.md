@@ -1,21 +1,30 @@
-KijaniKiosk DevOps Foundation
+# KijaniKiosk DevOps Foundation
 
-Technical blueprint for the KijaniKiosk online platform. This repository is the Week 2 DevOps starter kit: how we work in Git, which cloud model we use, where the system runs, who may do what, and how the network is segmented.
+## Overview
+This repository contains the end-to-end DevOps delivery pipeline for the KijaniKiosk payments application. It implements Infrastructure as Code (Terraform), Containerization (Docker), Orchestration (Kubernetes), and a CI/CD Pipeline (Jenkins).
 
-The graded work lives in starter-kit/.
+## Architecture
+- **App:** Node.js (`apps/kk-payments`)
+- **IaC:** Terraform (`infrastructure/`)
+- **K8s Manifests:** (`k8s/`)
+- **Serverless:** Mock receipt chain (`serverless/`)
+- **CI/CD:** `Jenkinsfile`
 
-Column 1	Column 2
-File	Purpose
-starter-kit/delivery-notes.md	Flow, Feedback and Learning in this repo’s workflow
-starter-kit/cloud-model.md	IaaS / PaaS / SaaS choice and why
-starter-kit/regions-azs.md	Region and multi-AZ reliability
-starter-kit/iam-least-privilege.md	IAM role for one application task
-starter-kit/network-topology.png	Public / private subnet diagram
-starter-kit/network-routing.md	Routing logic that matches the diagram
+## Prerequisites
+- Docker
+- Minikube (running)
+- Jenkins (running)
+- Terraform installed
 
+## How to Run the Pipeline
+1. Ensure Minikube is running: `minikube start`
+2. Build the image: `docker build -t kk-payments:latest apps/kk-payments/`
+3. Deploy to Kubernetes: `kubectl apply -f k8s/deployment.yaml`
+4. Configure Jenkins to point to this repository and run the `Jenkinsfile`.
 
-Branch model
-
-* main — production-ready documentation
-* develop — integration branch
-* feature/starter-kit-files — this starter kit, merged through a pull request
+## Directory Structure
+- `apps/`: Source code for the payments app.
+- `docs/`: Scope, Governance, Architecture diagrams.
+- `infrastructure/`: Terraform for namespaces.
+- `k8s/`: Kubernetes deployment and configmaps.
+- `serverless/`: Mock serverless receipt chain.

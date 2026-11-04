@@ -1,6 +1,5 @@
 node_modules/
 dist/
 test-results/
-node_modules/
-dist/
-test-results/
+week5/
+week8/
