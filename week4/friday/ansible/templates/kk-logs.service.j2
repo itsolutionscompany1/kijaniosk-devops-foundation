@@ -1,0 +1,54 @@
+[Unit]
+Description=KijaniKiosk Logs Service ({{ kk_service_name }})
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{ kk_service_user }}
+Group={{ kk_group }}
+EnvironmentFile={{ kk_config_dir }}/{{ kk_service_name }}.env
+ExecStart=/usr/bin/sleep infinity
+Restart=on-failure
+
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths={{ kk_logs_dir }}
+PrivateTmp=true
+PrivateDevices=true
+PrivateMounts=true
+
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectProc=invisible
+ProcSubset=pid
+
+NoNewPrivileges=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RemoveIPC=true
+UMask=0027
+
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+PrivateNetwork=false
+RestrictAddressFamilies=AF_UNIX
+
+RestrictNamespaces=true
+PrivateUsers=true
+
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+
+MemoryDenyWriteExecute=true
+DeviceAllow=/dev/null rw
+DeviceAllow=/dev/urandom r
+
+[Install]
+WantedBy=multi-user.target

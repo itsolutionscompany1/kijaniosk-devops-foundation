@@ -1,0 +1,150 @@
+
+PLAY [Configure KijaniKiosk servers] *******************************************
+
+TASK [Gathering Facts] *********************************************************
+ok: [payments]
+ok: [api]
+ok: [logs]
+
+TASK [Phase 1 — Update apt cache] **********************************************
+ok: [payments]
+ok: [api]
+ok: [logs]
+
+TASK [Phase 1 — Install common packages] ***************************************
+ok: [logs]
+ok: [api]
+ok: [payments]
+
+TASK [Phase 2 — Ensure kijanikiosk group exists] *******************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 2 — Ensure service accounts exist] *********************************
+ok: [api] => (item={'name': 'kk-api', 'uid': 2001})
+ok: [payments] => (item={'name': 'kk-api', 'uid': 2001})
+ok: [logs] => (item={'name': 'kk-api', 'uid': 2001})
+ok: [api] => (item={'name': 'kk-payments', 'uid': 2002})
+ok: [payments] => (item={'name': 'kk-payments', 'uid': 2002})
+ok: [logs] => (item={'name': 'kk-payments', 'uid': 2002})
+ok: [api] => (item={'name': 'kk-logs', 'uid': 2003})
+ok: [logs] => (item={'name': 'kk-logs', 'uid': 2003})
+ok: [payments] => (item={'name': 'kk-logs', 'uid': 2003})
+
+TASK [Phase 3 — Ensure base directory exists] **********************************
+ok: [logs]
+ok: [api]
+ok: [payments]
+
+TASK [Phase 3 — Ensure config directory exists] ********************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 3 — Ensure shared directory exists] ********************************
+ok: [logs]
+ok: [api]
+ok: [payments]
+
+TASK [Phase 3 — Ensure logs directory exists] **********************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 3 — Ensure health directory exists] ********************************
+ok: [payments]
+ok: [api]
+ok: [logs]
+
+TASK [Phase 3 — Apply default ACLs to logs directory] **************************
+ok: [payments] => (item={'entity': '', 'etype': 'user', 'perms': 'rwx'})
+ok: [api] => (item={'entity': '', 'etype': 'user', 'perms': 'rwx'})
+ok: [logs] => (item={'entity': '', 'etype': 'user', 'perms': 'rwx'})
+ok: [api] => (item={'entity': '', 'etype': 'group', 'perms': 'rwx'})
+ok: [payments] => (item={'entity': '', 'etype': 'group', 'perms': 'rwx'})
+ok: [logs] => (item={'entity': '', 'etype': 'group', 'perms': 'rwx'})
+ok: [api] => (item={'entity': '', 'etype': 'other', 'perms': '---'})
+ok: [payments] => (item={'entity': '', 'etype': 'other', 'perms': '---'})
+ok: [logs] => (item={'entity': '', 'etype': 'other', 'perms': '---'})
+
+TASK [Phase 4 — Ensure service environment file is present] ********************
+ok: [payments]
+ok: [api]
+ok: [logs]
+
+TASK [Phase 4 — Ensure systemd unit file is present] ***************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 4 — Ensure service is enabled and running] *************************
+ok: [logs]
+ok: [api]
+ok: [payments]
+
+TASK [Phase 5 — Set ufw default deny incoming] *********************************
+ok: [payments]
+ok: [api]
+ok: [logs]
+
+TASK [Phase 5 — Set ufw default allow outgoing] ********************************
+ok: [logs]
+ok: [api]
+ok: [payments]
+
+TASK [Phase 5 — Allow SSH] *****************************************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 5 — Allow HTTP] ****************************************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 5 — Allow payments port from loopback] *****************************
+skipping: [api]
+skipping: [logs]
+ok: [payments]
+
+TASK [Phase 5 — Allow payments port from monitoring subnet] ********************
+skipping: [api]
+skipping: [logs]
+ok: [payments]
+
+TASK [Phase 5 — Enable ufw] ****************************************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 6 — Ensure journald config directory exists] ***********************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 6 — Configure persistent journal] **********************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Phase 6 — Ensure /var/log/journal exists] ********************************
+ok: [payments]
+ok: [api]
+ok: [logs]
+
+TASK [Phase 7 — Seed a placeholder log file for logrotate validation] **********
+ok: [logs]
+ok: [api]
+ok: [payments]
+
+TASK [Phase 7 — Ensure logrotate config is present] ****************************
+ok: [payments]
+ok: [logs]
+ok: [api]
+
+PLAY RECAP *********************************************************************
+api                        : ok=24   changed=0    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+logs                       : ok=24   changed=0    unreachable=0    failed=0    skipped=2    rescued=0    ignored=0   
+payments                   : ok=26   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+

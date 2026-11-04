@@ -1,0 +1,63 @@
+===================================================================
+KijaniKiosk Post-Remediation Verification
+Date: 2026-09-30T19:58:21+00:00
+Host: kijanikiosk-vm
+User: vagrant
+===================================================================
+
+=== 1. logrotate --debug ===
+WARNING: logrotate in debug mode does nothing except printing debug messages!  Consider using verbose mode (-v) instead if this is not what you want.
+
+reading config file /etc/logrotate.d/kijanikiosk
+Reading state from file: /var/lib/logrotate/status
+state file /var/lib/logrotate/status does not exist
+Allocating hash table for state file, size 64 entries
+
+Handling 1 logs
+
+rotating pattern: /opt/kijanikiosk/shared/logs/*.log  after 1 days (7 rotations)
+empty log files are not rotated, old logs are removed
+No logs found. Rotation not needed.
+
+=== 2. Forced rotation ===
+error: error creating stub state file /var/lib/logrotate/status: Permission denied
+
+=== 3. Log directory after forced rotation ===
+total 8
+drwxrws---+ 2 root kijanikiosk 4096 Sep 30 19:47 .
+drwxr-xr-x  3 root kijanikiosk 4096 Sep 30 17:56 ..
+-rw-r-----  1 root kijanikiosk    0 Sep 30 19:47 kk-api.log
+
+=== 4. ACL on rotated/new log file ===
+getfacl: Removing leading '/' from absolute path names
+# file: opt/kijanikiosk/shared/logs/kk-api.log
+# owner: root
+# group: kijanikiosk
+user::rw-
+group::r--
+other::---
+
+
+=== 5. Requirement 3 definitive test ===
+Command: sudo -u kk-api touch /opt/kijanikiosk/shared/logs/test-write.tmp
+PASS: kk-api can write after logrotate
+
+=== 6. Verify the touch file was created with expected ownership ===
+-rw-rw---- 1 kk-api kijanikiosk 0 Sep 30 19:58 /opt/kijanikiosk/shared/logs/test-write.tmp
+
+=== 7. All three services active ===
+kk-api          : active
+kk-payments     : active
+kk-logs         : active
+
+=== 8. Hardening scores ===
+kk-api          : 1.3 OK 🙂
+kk-payments     : 0.2 SAFE 😀
+kk-logs         : 1.0 OK 🙂
+
+=== 9. Health JSON ===
+{"timestamp":"2026-09-30T19:56:08+00:00","kk-api":"down","kk-payments":"down","kk-logs":"down"}
+
+===================================================================
+END OF POST-REMEDIATION VERIFICATION
+===================================================================

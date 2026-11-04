@@ -1,0 +1,16 @@
+---
+# Payments server specific configuration
+
+kk_service_name: kk-payments
+kk_service_user: "{{ kk_payments_user }}"
+kk_service_uid: "{{ kk_payments_uid }}"
+kk_service_port: 3001
+
+# Environment file for the payments service
+# Placed under /opt/kijanikiosk/config/, NOT /etc/, so ProtectSystem=strict
+# does not block the service from reading it (Challenge D from the Friday brief)
+kk_env_file_content:
+  PAYMENTS_PORT: "3001"
+  PAYMENTS_ENV: "staging"
+  PAYMENTS_LOG_DIR: "{{ kk_logs_dir }}"
+  PAYMENTS_API_URL: "http://kijanikiosk-api:3000"
