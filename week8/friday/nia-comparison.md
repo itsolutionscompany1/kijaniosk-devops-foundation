@@ -1,0 +1,22 @@
+# KijaniKiosk Deployment Strategy: Week 7 vs Week 8
+
+The transition from our previous deployment strategy to the new container delivery pipeline represents a fundamental shift in how we manage reliability and scale at KijaniKiosk. Previously, deployment relied on manual server provisioning and configuration scripts, which introduced configuration drift, slow recovery times, and environment-specific failures. This week, we introduced a fully containerized approach deployed via Kubernetes, ensuring absolute consistency from the developer's machine to the live production environment.
+
+## Comparison Table
+
+| Concern | Week 7 Approach | Week 8 Approach |
+| :--- | :--- | :--- |
+| **Deployment Mechanism** | Manual scripts executed on virtual machines, requiring environment-specific configuration and prone to human error. | Automated container image builds pushed to a private registry, with Kubernetes orchestrating the rollout of identical instances. |
+| **Rollback Mechanism** | Manual reversion of scripts and configuration files, often requiring server restarts and risking incomplete state restoration. | Instant reversion to a previous known-good container image tag, with zero downtime as the cluster rolls back automatically. |
+| **Failure Recovery** | A crashed service required manual intervention or external monitoring to restart the process, leading to extended downtime. | Kubernetes self-healing automatically detects and replaces failed instances. During testing, a replacement instance reached a healthy state in just 5 seconds. |
+| **Scaling** | Vertical scaling only, requiring manual provisioning of larger, more expensive servers with significant lead time. | Horizontal scaling allows instant replication of application instances, distributing load efficiently across the cluster. |
+
+## Evidence and Impact
+
+The shift to containerization has yielded specific, measurable improvements that directly benefit our operational efficiency. First, our overall deployment footprint has been dramatically reduced. By moving to a multi-stage build process, we stripped away unnecessary build tools and development dependencies, reducing our application image size down to a highly optimized 49.8MB. This results in dramatically faster deployment times across the network and a significantly smaller security attack surface, as we are no longer shipping compilers into production. Furthermore, this reduction in size drastically decreases the time required to pull the image from the registry and start the application, which is critical during a rapid scaling event or an emergency recovery. Faster pull times directly translate to less downtime for the business.
+
+Second, the reliability of our system has vastly improved through the implementation of Kubernetes orchestration. During our failure recovery tests, we measured the time it took for the system to automatically detect a failed instance and bring a new one online. The self-healing mechanism successfully replaced a lost instance and returned to a fully healthy state in just 5 seconds. In our previous setup, this process could take several minutes of downtime and required manual intervention from an engineer. Now, the system recovers itself without human touch. This automated recovery fundamentally changes our operational posture; engineers no longer need to be woken up in the middle of the night to manually restart a crashed service. The system simply heals itself and maintains the high availability our customers expect.
+
+## What Week 8 Does Not Yet Solve
+
+While this delivery pipeline is a massive leap forward and proves that our application can run reliably in a cluster, it is not the final destination. The current architecture does not yet handle environment-specific configurations securely or flexibly. Values such as database connection strings, API keys, or external service URLs are currently baked into the deployment definitions rather than being dynamically injected at runtime. This means a single deployment package cannot be cleanly promoted across staging and production environments without manually altering the manifests. Next week, we will introduce dedicated configuration and secret management systems. This will decouple our deployment logic from our environment variables, completing the path to a truly production-ready, dynamic system that Nia can confidently present to the board. Without this next evolution, our deployment pipeline remains rigid and prone to environmental mismatch errors.

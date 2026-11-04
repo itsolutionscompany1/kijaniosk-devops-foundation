@@ -1,0 +1,5 @@
+NAME                           READY   STATUS    RESTARTS   AGE
+kk-payments-659d885856-8p455   1/1     Running   0          57s
+kk-payments-659d885856-vzwpx   1/1     Running   0          57s
+NAME          READY   UP-TO-DATE   AVAILABLE   AGE
+kk-payments   2/2     2            2           60s

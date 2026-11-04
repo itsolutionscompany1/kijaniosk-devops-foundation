@@ -1,0 +1,14 @@
+NAME                           READY   STATUS    RESTARTS   AGE
+kk-payments-659d885856-8p455   1/1     Running   0          2m20s
+kk-payments-659d885856-vzwpx   1/1     Running   0          2m20s
+kk-payments-659d885856-8p455   1/1     Terminating   0          2m22s
+kk-payments-659d885856-jtvhx   0/1     Pending       0          0s
+kk-payments-659d885856-8p455   1/1     Terminating   0          2m22s
+kk-payments-659d885856-jtvhx   0/1     Pending       0          0s
+kk-payments-659d885856-jtvhx   0/1     ContainerCreating   0          1s
+kk-payments-659d885856-jtvhx   0/1     ContainerCreating   0          4s
+kk-payments-659d885856-jtvhx   1/1     Running             0          5s
+kk-payments-659d885856-8p455   0/1     Error               0          2m54s
+kk-payments-659d885856-8p455   0/1     Error               0          2m54s
+kk-payments-659d885856-8p455   0/1     Error               0          2m54s
+kk-payments-659d885856-8p455   0/1     Error               0          2m55s

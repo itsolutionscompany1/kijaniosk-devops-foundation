@@ -1,0 +1,18 @@
+# Stage 1: Build
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+
+# Stage 2: Production
+FROM node:20-alpine
+RUN addgroup -S kijani && adduser -S kijani -G kijani
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/src ./src
+USER kijani
+EXPOSE 3001
+HEALTHCHECK --interval=10s --timeout=3s --start-period=30s --retries=3 CMD node -e "require('http').get('http://localhost:3001/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+CMD ["node", "src/index.js"]

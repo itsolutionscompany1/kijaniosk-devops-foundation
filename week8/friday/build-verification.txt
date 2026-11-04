@@ -1,0 +1,14 @@
+=== 1. Image Size ===
+IMAGE              ID             DISK USAGE   CONTENT SIZE   EXTRA
+kk-payments:temp   3993794d3c34        202MB         49.8MB        
+
+=== 2. Whoami (should be kijani) ===
+kijani
+
+=== 3. TypeScript check (should be empty) ===
+
+=== 4. Healthcheck config ===
+{"Test":["CMD-SHELL","node -e \"require('http').get('http://localhost:3001/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""],"Interval":10000000000,"Timeout":3000000000,"StartPeriod":30000000000,"Retries":3}
+
+=== 5. Build Output Confirmation ===
+Built successfully with --no-cache
